@@ -85,8 +85,8 @@ export default function SlotScheduler() {
     const { error } = await supabase.from('slots').insert({
       name,
       location,
-      start: start.toISOString(),
-      end: end.toISOString()
+      start: start,
+      end: end
     });
 
     if (error) {
