@@ -20,23 +20,25 @@ export default function SlotScheduler() {
     RR: 'purple'
   };
 
+  const fetchEvents = async () => {
+    const { data } = await supabase.from('slots').select();
+    const formatted = data.map(slot => ({
+      id: slot.id,
+      title: slot.name + ' (' + slot.location + ')',
+      start: slot.start,
+      end: slot.end,
+      backgroundColor: locationColors[slot.location] || 'gray',
+      borderColor: locationColors[slot.location] || 'gray',
+      extendedProps: {
+        name: slot.name,
+        location: slot.location
+      }
+    }));
+    setEvents(formatted);
+  };
+
   useEffect(() => {
-    const fetchEvents = async () => {
-      const { data } = await supabase.from('slots').select();
-      const formatted = data.map(slot => ({
-        id: slot.id,
-        title: slot.name + ' (' + slot.location + ')',
-        start: slot.start,
-        end: slot.end,
-        backgroundColor: locationColors[slot.location] || 'gray',
-        borderColor: locationColors[slot.location] || 'gray',
-        extendedProps: {
-          name: slot.name,
-          location: slot.location
-        }
-      }));
-      setEvents(formatted);
-    };
+    fetchEvents();
 
     const slotSubscription = supabase
       .channel('public:slots')
@@ -44,8 +46,6 @@ export default function SlotScheduler() {
         fetchEvents();
       })
       .subscribe();
-
-    fetchEvents();
 
     return () => {
       supabase.removeChannel(slotSubscription);
@@ -85,21 +85,8 @@ export default function SlotScheduler() {
     });
 
     if (!error) {
+      await fetchEvents();
       setSelectedTime(null);
-      const { data } = await supabase.from('slots').select();
-      const formatted = data.map(slot => ({
-        id: slot.id,
-        title: slot.name + ' (' + slot.location + ')',
-        start: slot.start,
-        end: slot.end,
-        backgroundColor: locationColors[slot.location] || 'gray',
-        borderColor: locationColors[slot.location] || 'gray',
-        extendedProps: {
-          name: slot.name,
-          location: slot.location
-        }
-      }));
-      setEvents(formatted);
     }
   };
 
@@ -117,20 +104,7 @@ export default function SlotScheduler() {
 
     if (!error) {
       setSelectedEvent(null);
-      const { data } = await supabase.from('slots').select();
-      const formatted = data.map(slot => ({
-        id: slot.id,
-        title: slot.name + ' (' + slot.location + ')',
-        start: slot.start,
-        end: slot.end,
-        backgroundColor: locationColors[slot.location] || 'gray',
-        borderColor: locationColors[slot.location] || 'gray',
-        extendedProps: {
-          name: slot.name,
-          location: slot.location
-        }
-      }));
-      setEvents(formatted);
+      await fetchEvents();
     }
   };
 
