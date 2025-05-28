@@ -41,7 +41,10 @@ export default function SlotScheduler() {
   }, []);
 
   const handleSelect = async (info) => {
-    if (!name) return;
+    if (!name) {
+      alert("Please enter your name before booking a slot.");
+      return;
+    }
 
     const newStart = new Date(info.start);
     const newEnd = new Date(info.end);
@@ -82,6 +85,30 @@ export default function SlotScheduler() {
     setSelectedEvent(info.event);
   };
 
+  const handleCancel = async () => {
+    if (!selectedEvent || selectedEvent.extendedProps.name !== name) {
+      alert("You can only cancel bookings made under your name.");
+      return;
+    }
+
+    const { error } = await supabase.from('slots').delete().eq('id', selectedEvent.id);
+
+    if (!error) {
+      setSelectedEvent(null);
+      const { data } = await supabase.from('slots').select();
+      const formatted = data.map(slot => ({
+        id: slot.id,
+        title: slot.name,
+        start: slot.start,
+        end: slot.end,
+        extendedProps: {
+          name: slot.name
+        }
+      }));
+      setEvents(formatted);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -112,10 +139,18 @@ export default function SlotScheduler() {
         <div className="bg-gray-50 p-4 rounded-lg shadow-inner">
           <h2 className="text-xl font-semibold mb-2">Booking Details</h2>
           {selectedEvent ? (
-            <div>
+            <div className="space-y-2">
               <p><strong>Name:</strong> {selectedEvent.extendedProps.name}</p>
               <p><strong>Start:</strong> {new Date(selectedEvent.start).toLocaleString()}</p>
               <p><strong>End:</strong> {new Date(selectedEvent.end).toLocaleString()}</p>
+              {selectedEvent.extendedProps.name === name && (
+                <button
+                  onClick={handleCancel}
+                  className="mt-2 bg-red-500 hover:bg-red-600 text-white font-medium px-3 py-1 rounded"
+                >
+                  Cancel Booking
+                </button>
+              )}
             </div>
           ) : (
             <p className="text-gray-500">Click on a booking to see details.</p>
