@@ -1,89 +1,133 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 const supabase = createClient('https://YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
 
 export default function SlotScheduler() {
-  const [slots, setSlots] = useState(null);
+  const [events, setEvents] = useState([]);
   const [name, setName] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
-    const fetchSlots = async () => {
+    const fetchEvents = async () => {
       const { data } = await supabase.from('slots').select();
-      setSlots(data);
+      const formatted = data.map(slot => ({
+        id: slot.id,
+        title: slot.name,
+        start: slot.start,
+        end: slot.end,
+        extendedProps: {
+          name: slot.name
+        }
+      }));
+      setEvents(formatted);
     };
 
     const slotSubscription = supabase
       .channel('public:slots')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'slots' }, () => {
-        fetchSlots();
+        fetchEvents();
       })
       .subscribe();
 
-    fetchSlots();
+    fetchEvents();
 
     return () => {
       supabase.removeChannel(slotSubscription);
     };
   }, []);
 
-  const bookSlot = async (id) => {
+  const handleSelect = async (info) => {
     if (!name) return;
-    await supabase.from('slots').update({ name }).eq('id', id);
+
+    const newStart = new Date(info.start);
+    const newEnd = new Date(info.end);
+
+    const overlap = events.some(event => {
+      const existingStart = new Date(event.start);
+      const existingEnd = new Date(event.end);
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (overlap) {
+      alert("This time slot is already booked. Please choose another time.");
+      return;
+    }
+
+    const { error } = await supabase.from('slots').insert({
+      name,
+      start: info.startStr,
+      end: info.endStr
+    });
+
+    if (!error) {
+      const { data } = await supabase.from('slots').select();
+      const formatted = data.map(slot => ({
+        id: slot.id,
+        title: slot.name,
+        start: slot.start,
+        end: slot.end,
+        extendedProps: {
+          name: slot.name
+        }
+      }));
+      setEvents(formatted);
+    }
   };
 
-  const cancelSlot = async (id) => {
-    await supabase.from('slots').update({ name: null }).eq('id', id);
+  const handleEventClick = (info) => {
+    setSelectedEvent(info.event);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white shadow-2xl rounded-2xl p-6 w-full max-w-2xl space-y-6">
-        <h1 className="text-3xl font-bold text-center text-blue-700">Machine Slot Scheduler</h1>
-        <p className="text-center text-gray-600">Sign up for a slot by entering your name and clicking an available time.</p>
-
-        <input
-          type="text"
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="Enter your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        {slots === null ? (
-          <p className="text-center text-gray-500">Loading slots...</p>
-        ) : (
-          <ul className="space-y-3">
-            {slots.map(slot => (
-              <li
-                key={slot.id}
-                className={`p-5 rounded-xl flex justify-between items-center border shadow-sm ${slot.name ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}
-              >
-                <div>
-                  <p className="text-lg font-semibold">{slot.time}</p>
-                  <p className="text-sm text-gray-600">{slot.name ? `Booked by ${slot.name}` : 'Available'}</p>
-                </div>
-                {!slot.name ? (
-                  <button
-                    className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-xl transition"
-                    onClick={() => bookSlot(slot.id)}
-                    disabled={!name}
-                  >
-                    Sign Up
-                  </button>
-                ) : slot.name === name ? (
-                  <button
-                    className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-xl transition"
-                    onClick={() => cancelSlot(slot.id)}
-                  >
-                    Cancel
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
+      <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-3">
+          <h1 className="text-3xl font-bold text-center text-blue-700 mb-4">TC Hood Scheduler</h1>
+          <div className="flex justify-between items-center mb-4">
+            <input
+              type="text"
+              className="w-full md:w-1/3 p-2 border rounded"
+              placeholder="Enter your name before selecting a time"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <FullCalendar
+            plugins={[timeGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            selectable={true}
+            events={events}
+            select={handleSelect}
+            eventClick={handleEventClick}
+            allDaySlot={false}
+            slotDuration="00:30:00"
+            height="auto"
+            eventContent={renderEventContent}
+          />
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg shadow-inner">
+          <h2 className="text-xl font-semibold mb-2">Booking Details</h2>
+          {selectedEvent ? (
+            <div>
+              <p><strong>Name:</strong> {selectedEvent.extendedProps.name}</p>
+              <p><strong>Start:</strong> {new Date(selectedEvent.start).toLocaleString()}</p>
+              <p><strong>End:</strong> {new Date(selectedEvent.end).toLocaleString()}</p>
+            </div>
+          ) : (
+            <p className="text-gray-500">Click on a booking to see details.</p>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function renderEventContent(eventInfo) {
+  return (
+    <div title={`Booked by ${eventInfo.event.title}`}>{eventInfo.event.title}</div>
   );
 }
