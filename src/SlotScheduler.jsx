@@ -9,6 +9,14 @@ const supabase = createClient(
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
+const PST_OFFSET = -8 * 60; // PST offset in minutes
+
+function toPSTISOString(date) {
+  const tzOffsetMs = PST_OFFSET * 60 * 1000;
+  const pstDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000 + tzOffsetMs);
+  return pstDate.toISOString();
+}
+
 export default function SlotScheduler() {
   const [events, setEvents] = useState([]);
   const [name, setName] = useState('');
@@ -31,8 +39,8 @@ export default function SlotScheduler() {
     const formatted = data.map(slot => ({
       id: slot.id,
       title: slot.name + ' (' + slot.location + ')',
-      start: slot.start,
-      end: slot.end,
+      start: new Date(slot.start),
+      end: new Date(slot.end),
       backgroundColor: locationColors[slot.location] || 'gray',
       borderColor: locationColors[slot.location] || 'gray',
       extendedProps: {
@@ -84,8 +92,8 @@ export default function SlotScheduler() {
     const { error } = await supabase.from('slots').insert({
       name,
       location,
-      start: start.toISOString(),
-      end: end.toISOString()
+      start: toPSTISOString(start),
+      end: toPSTISOString(end)
     });
 
     if (error) {
@@ -193,6 +201,7 @@ export default function SlotScheduler() {
             slotMinTime="06:00:00"
             height="auto"
             eventContent={renderEventContent}
+            timeZone="local"
           />
         </div>
         <div className="bg-gray-50 p-4 rounded-lg shadow-inner">
