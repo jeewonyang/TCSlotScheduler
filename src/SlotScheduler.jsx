@@ -194,7 +194,7 @@ export default function SlotScheduler() {
             slotMinTime="06:00:00"
             height="auto"
             eventContent={renderEventContent}
-            timeZone="local"
+            timeZone="America/Los_Angeles"
           />
         </div>
         <div className="bg-gray-50 p-4 rounded-lg shadow-inner">
