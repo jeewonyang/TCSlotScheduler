@@ -187,8 +187,8 @@ export default function SlotScheduler() {
             events={events}
             eventClick={handleEventClick}
             allDaySlot={false}
-            slotDuration="00:30:00"
-            slotMinTime="06:00:00"
+            slotDuration="00:30:00" maxTime="06:00:00"
+            slotMinTime="00:00:00"
             height="auto"
             eventContent={renderEventContent}
             timeZone="local"
