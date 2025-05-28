@@ -9,13 +9,6 @@ const supabase = createClient(
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
-const PST_OFFSET = -8 * 60; // PST offset in minutes
-
-function toPSTISOString(date) {
-  const tzOffsetMs = PST_OFFSET * 60 * 1000;
-  const pstDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000 + tzOffsetMs);
-  return pstDate.toISOString();
-}
 
 export default function SlotScheduler() {
   const [events, setEvents] = useState([]);
@@ -92,8 +85,8 @@ export default function SlotScheduler() {
     const { error } = await supabase.from('slots').insert({
       name,
       location,
-      start: toPSTISOString(start),
-      end: toPSTISOString(end)
+      start: start.toISOString(),
+      end: end.toISOString()
     });
 
     if (error) {
