@@ -1,5 +1,6 @@
 import logo from './logo.svg';
 import './App.css';
+import SlotScheduler from './SlotScheduler';
 
 function App() {
   return (
@@ -21,5 +22,15 @@ function App() {
     </div>
   );
 }
+import SlotScheduler from './SlotScheduler';
 
+function App() {
+  return (
+    <div className="App">
+      <SlotScheduler />
+    </div>
+  );
+}
+
+export default App;
 export default App;
