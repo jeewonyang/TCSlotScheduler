@@ -94,20 +94,6 @@ export default function SlotScheduler() {
     }
   };
 
-  const handleSelect = (info) => {
-    if (!name) {
-      alert("Please enter your name before booking a slot.");
-      return;
-    }
-
-    const startDateTime = new Date(info.startStr);
-    const endDateTime = new Date(info.endStr);
-
-    setManualDate(startDateTime.toISOString().split('T')[0]);
-    setStartTime(startDateTime.toTimeString().slice(0, 5));
-    setEndTime(endDateTime.toTimeString().slice(0, 5));
-  };
-
   const handleEventClick = (info) => {
     setSelectedEvent(info.event);
   };
@@ -178,7 +164,6 @@ export default function SlotScheduler() {
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             selectable={true}
-            select={handleSelect}
             events={events}
             eventClick={handleEventClick}
             allDaySlot={false}
