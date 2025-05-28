@@ -15,6 +15,9 @@ export default function SlotScheduler() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [location, setLocation] = useState('LL');
+  const [manualDate, setManualDate] = useState('');
+  const [startTime, setStartTime] = useState('06:00');
+  const [endTime, setEndTime] = useState('06:30');
 
   const locationColors = {
     LL: 'blue',
@@ -55,25 +58,20 @@ export default function SlotScheduler() {
     };
   }, []);
 
-  const handleSelect = (info) => {
-    if (!name) {
-      alert("Please enter your name before booking a slot.");
+  const handleManualBook = async () => {
+    if (!name || !manualDate || !startTime || !endTime) {
+      alert("Please fill in name, date, start and end times.");
       return;
     }
-    setSelectedTime({ start: info.startStr, end: info.endStr });
-  };
 
-  const handleBook = async () => {
-    if (!selectedTime || !name) return;
-
-    const newStart = new Date(selectedTime.start);
-    const newEnd = new Date(selectedTime.end);
+    const start = new Date(`${manualDate}T${startTime}:00`);
+    const end = new Date(`${manualDate}T${endTime}:00`);
 
     const overlap = events.some(event => {
       if (event.extendedProps.location !== location) return false;
       const existingStart = new Date(event.start);
       const existingEnd = new Date(event.end);
-      return newStart < existingEnd && newEnd > existingStart;
+      return start < existingEnd && end > existingStart;
     });
 
     if (overlap) {
@@ -84,13 +82,15 @@ export default function SlotScheduler() {
     const { error } = await supabase.from('slots').insert({
       name,
       location,
-      start: selectedTime.start,
-      end: selectedTime.end
+      start,
+      end
     });
 
     if (!error) {
       await fetchEvents();
-      setSelectedTime(null);
+      setManualDate('');
+      setStartTime('06:00');
+      setEndTime('06:30');
     }
   };
 
@@ -117,39 +117,54 @@ export default function SlotScheduler() {
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3">
           <h1 className="text-3xl font-bold text-center text-blue-700 mb-4">TC Hood Scheduler</h1>
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 items-center">
             <input
               type="text"
-              className="w-full md:w-1/3 p-2 border rounded"
-              placeholder="Enter your name"
+              className="p-2 border rounded"
+              placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+            <input
+              type="date"
+              className="p-2 border rounded"
+              value={manualDate}
+              onChange={(e) => setManualDate(e.target.value)}
+            />
+            <input
+              type="time"
+              className="p-2 border rounded"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+            <input
+              type="time"
+              className="p-2 border rounded"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
             />
             <select
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full md:w-1/4 p-2 border rounded"
+              className="p-2 border rounded"
             >
               <option value="LL">LL</option>
               <option value="LR">LR</option>
               <option value="RL">RL</option>
               <option value="RR">RR</option>
             </select>
-            {selectedTime && (
-              <button
-                onClick={handleBook}
-                className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded"
-              >
-                Book
-              </button>
-            )}
           </div>
+          <button
+            onClick={handleManualBook}
+            className="mb-4 bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded"
+          >
+            Book Slot
+          </button>
           <FullCalendar
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             selectable={true}
             events={events}
-            select={handleSelect}
             eventClick={handleEventClick}
             allDaySlot={false}
             slotDuration="00:30:00"
