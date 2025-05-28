@@ -70,13 +70,14 @@ export default function SlotScheduler() {
     const newEnd = new Date(selectedTime.end);
 
     const overlap = events.some(event => {
+      if (event.extendedProps.location !== location) return false;
       const existingStart = new Date(event.start);
       const existingEnd = new Date(event.end);
       return newStart < existingEnd && newEnd > existingStart;
     });
 
     if (overlap) {
-      alert("This time slot is already booked. Please choose another time.");
+      alert("This slot is already booked at this time. Please choose another time or location.");
       return;
     }
 
