@@ -10,17 +10,29 @@ export default function SlotScheduler() {
   const [events, setEvents] = useState([]);
   const [name, setName] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [location, setLocation] = useState('LL');
+
+  const locationColors = {
+    LL: 'blue',
+    LR: 'green',
+    RL: 'orange',
+    RR: 'purple'
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
       const { data } = await supabase.from('slots').select();
       const formatted = data.map(slot => ({
         id: slot.id,
-        title: slot.name,
+        title: slot.name + ' (' + slot.location + ')',
         start: slot.start,
         end: slot.end,
+        backgroundColor: locationColors[slot.location] || 'gray',
+        borderColor: locationColors[slot.location] || 'gray',
         extendedProps: {
-          name: slot.name
+          name: slot.name,
+          location: slot.location
         }
       }));
       setEvents(formatted);
@@ -40,14 +52,19 @@ export default function SlotScheduler() {
     };
   }, []);
 
-  const handleSelect = async (info) => {
+  const handleSelect = (info) => {
     if (!name) {
       alert("Please enter your name before booking a slot.");
       return;
     }
+    setSelectedTime({ start: info.startStr, end: info.endStr });
+  };
 
-    const newStart = new Date(info.start);
-    const newEnd = new Date(info.end);
+  const handleBook = async () => {
+    if (!selectedTime || !name) return;
+
+    const newStart = new Date(selectedTime.start);
+    const newEnd = new Date(selectedTime.end);
 
     const overlap = events.some(event => {
       const existingStart = new Date(event.start);
@@ -62,19 +79,24 @@ export default function SlotScheduler() {
 
     const { error } = await supabase.from('slots').insert({
       name,
-      start: info.startStr,
-      end: info.endStr
+      location,
+      start: selectedTime.start,
+      end: selectedTime.end
     });
 
     if (!error) {
+      setSelectedTime(null);
       const { data } = await supabase.from('slots').select();
       const formatted = data.map(slot => ({
         id: slot.id,
-        title: slot.name,
+        title: slot.name + ' (' + slot.location + ')',
         start: slot.start,
         end: slot.end,
+        backgroundColor: locationColors[slot.location] || 'gray',
+        borderColor: locationColors[slot.location] || 'gray',
         extendedProps: {
-          name: slot.name
+          name: slot.name,
+          location: slot.location
         }
       }));
       setEvents(formatted);
@@ -98,11 +120,14 @@ export default function SlotScheduler() {
       const { data } = await supabase.from('slots').select();
       const formatted = data.map(slot => ({
         id: slot.id,
-        title: slot.name,
+        title: slot.name + ' (' + slot.location + ')',
         start: slot.start,
         end: slot.end,
+        backgroundColor: locationColors[slot.location] || 'gray',
+        borderColor: locationColors[slot.location] || 'gray',
         extendedProps: {
-          name: slot.name
+          name: slot.name,
+          location: slot.location
         }
       }));
       setEvents(formatted);
@@ -114,14 +139,32 @@ export default function SlotScheduler() {
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3">
           <h1 className="text-3xl font-bold text-center text-blue-700 mb-4">TC Hood Scheduler</h1>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
             <input
               type="text"
               className="w-full md:w-1/3 p-2 border rounded"
-              placeholder="Enter your name before selecting a time"
+              placeholder="Enter your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full md:w-1/4 p-2 border rounded"
+            >
+              <option value="LL">LL</option>
+              <option value="LR">LR</option>
+              <option value="RL">RL</option>
+              <option value="RR">RR</option>
+            </select>
+            {selectedTime && (
+              <button
+                onClick={handleBook}
+                className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded"
+              >
+                Book
+              </button>
+            )}
           </div>
           <FullCalendar
             plugins={[timeGridPlugin, interactionPlugin]}
@@ -132,6 +175,7 @@ export default function SlotScheduler() {
             eventClick={handleEventClick}
             allDaySlot={false}
             slotDuration="00:30:00"
+            slotMinTime="06:00:00"
             height="auto"
             eventContent={renderEventContent}
           />
@@ -141,6 +185,7 @@ export default function SlotScheduler() {
           {selectedEvent ? (
             <div className="space-y-2">
               <p><strong>Name:</strong> {selectedEvent.extendedProps.name}</p>
+              <p><strong>Location:</strong> {selectedEvent.extendedProps.location}</p>
               <p><strong>Start:</strong> {new Date(selectedEvent.start).toLocaleString()}</p>
               <p><strong>End:</strong> {new Date(selectedEvent.end).toLocaleString()}</p>
               {selectedEvent.extendedProps.name === name && (
@@ -163,6 +208,8 @@ export default function SlotScheduler() {
 
 function renderEventContent(eventInfo) {
   return (
-    <div title={`Booked by ${eventInfo.event.title}`}>{eventInfo.event.title}</div>
+    <div title={`Booked by ${eventInfo.event.extendedProps.name} (${eventInfo.event.extendedProps.location})`}>
+      {eventInfo.event.title}
+    </div>
   );
 }
