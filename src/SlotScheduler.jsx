@@ -1,13 +1,100 @@
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+const supabase = createClient('https://YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
 
 export default function SlotScheduler() {
-  const [slots, setSlots] = useState([]);
+  const [slots, setSlots] = useState(null);
   const [name, setName] = useState('');
 
   useEffect(() => {
@@ -53,36 +140,41 @@ export default function SlotScheduler() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        <ul className="space-y-3">
-          {slots.map(slot => (
-            <li
-              key={slot.id}
-              className={`p-5 rounded-xl flex justify-between items-center border shadow-sm ${slot.name ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}
-            >
-              <div>
-                <p className="text-lg font-semibold">{slot.time}</p>
-                <p className="text-sm text-gray-600">{slot.name ? `Booked by ${slot.name}` : 'Available'}</p>
-              </div>
-              {!slot.name ? (
-                <button
-                  className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-xl transition"
-                  onClick={() => bookSlot(slot.id)}
-                  disabled={!name}
-                >
-                  Sign Up
-                </button>
-              ) : slot.name === name ? (
-                <button
-                  className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-xl transition"
-                  onClick={() => cancelSlot(slot.id)}
-                >
-                  Cancel
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        {slots === null ? (
+          <p className="text-center text-gray-500">Loading slots...</p>
+        ) : (
+          <ul className="space-y-3">
+            {slots.map(slot => (
+              <li
+                key={slot.id}
+                className={`p-5 rounded-xl flex justify-between items-center border shadow-sm ${slot.name ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}
+              >
+                <div>
+                  <p className="text-lg font-semibold">{slot.time}</p>
+                  <p className="text-sm text-gray-600">{slot.name ? `Booked by ${slot.name}` : 'Available'}</p>
+                </div>
+                {!slot.name ? (
+                  <button
+                    className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-xl transition"
+                    onClick={() => bookSlot(slot.id)}
+                    disabled={!name}
+                  >
+                    Sign Up
+                  </button>
+                ) : slot.name === name ? (
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-xl transition"
+                    onClick={() => cancelSlot(slot.id)}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
 }
+
