@@ -103,10 +103,7 @@ export default function SlotScheduler() {
   };
 
   const handleSelect = (info) => {
-    if (!name) {
-      alert("Please enter your name before booking a slot.");
-      return;
-    }
+    
 
     const startDateTime = new Date(info.startStr);
     const endDateTime = new Date(info.endStr);
