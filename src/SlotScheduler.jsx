@@ -4,7 +4,10 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
-const supabase = createClient('https://YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_ANON_KEY
+);
 
 export default function SlotScheduler() {
   const [events, setEvents] = useState([]);
