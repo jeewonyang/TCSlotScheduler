@@ -67,6 +67,8 @@ export default function SlotScheduler() {
     const start = new Date(`${manualDate}T${startTime}:00`);
     const end = new Date(`${manualDate}T${endTime}:00`);
 
+    console.log("Booking:", { name, location, start, end });
+
     const overlap = events.some(event => {
       if (event.extendedProps.location !== location) return false;
       const existingStart = new Date(event.start);
@@ -82,16 +84,35 @@ export default function SlotScheduler() {
     const { error } = await supabase.from('slots').insert({
       name,
       location,
-      start,
-      end
+      start: start.toISOString(),
+      end: end.toISOString()
     });
 
-    if (!error) {
-      await fetchEvents();
-      setManualDate('');
-      setStartTime('06:00');
-      setEndTime('06:30');
+    if (error) {
+      console.error("Insert failed:", error);
+      alert("Booking failed. Check console for error.");
+      return;
     }
+
+    await fetchEvents();
+    setSelectedTime(null);
+    setManualDate('');
+    setStartTime('06:00');
+    setEndTime('06:30');
+  };
+
+  const handleSelect = (info) => {
+    if (!name) {
+      alert("Please enter your name before booking a slot.");
+      return;
+    }
+
+    const startDateTime = new Date(info.startStr);
+    const endDateTime = new Date(info.endStr);
+
+    setManualDate(startDateTime.toISOString().split('T')[0]);
+    setStartTime(startDateTime.toTimeString().slice(0, 5));
+    setEndTime(endDateTime.toTimeString().slice(0, 5));
   };
 
   const handleEventClick = (info) => {
@@ -164,6 +185,7 @@ export default function SlotScheduler() {
             plugins={[timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             selectable={true}
+            select={handleSelect}
             events={events}
             eventClick={handleEventClick}
             allDaySlot={false}
